@@ -15,7 +15,7 @@ public class Gyro extends AHRS {
         return instance;
     }
 
-    public void ZeroYaw() {
+    public void zeroYaw() {
         this.reset();
     }
 }
