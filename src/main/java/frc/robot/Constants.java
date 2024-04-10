@@ -13,7 +13,25 @@ package frc.robot;
  * constants are needed, to reduce verbosity.
  */
 public final class Constants {
-  public static class OperatorConstants {
-    public static final int kDriverControllerPort = 0;
-  }
+    public static class OperatorConstants {
+        public static final int kDriverControllerPort = 0;
+    }
+
+    public static final boolean INVERT_GYRO = true;
+
+    public static final double NEO550_RES = 42;
+    public static final double INTAKE_GEAR_RATIO = 203.636364;
+    public static final double ARM_ENC_CONVERSION_FACTOR = 360.0 / (NEO550_RES * INTAKE_GEAR_RATIO);
+    public static final double CLIMBER_UNITS_TO_INCHES_FACTOR = 1;
+    public static final double ARM_DEG_SCALAR = 0.02756;
+    public static final double SHOOTER_DEG_SCALAR = 0.0116;
+    public static final double LIMELIGHT_DEGREE_SCALAR = 23.188 / 20.25; // 21.1726 / 22.5;
+    public static final double SHOOTER_OFFSET_ANGLE_DEG = 59;
+
+    public static final String LIMELIGHT_TABLE_NAME = "";
+
+    public static final int POV_UP    = 0;
+    public static final int POV_RIGHT = 90;
+    public static final int POV_DOWN  = 180;
+    public static final int POV_LEFT  = 270;
 }
