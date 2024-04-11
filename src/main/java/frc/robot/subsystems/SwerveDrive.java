@@ -24,15 +24,15 @@ import frc.robot.Gyro;
 import frc.robot.Maths;
 
 public class SwerveDrive extends SubsystemBase {
-        private boolean m_field_oriented = true;
-        private boolean m_faris_mode = false;
-        private double m_speed_scalar = SwerveConstants.FARIS_SPEED_MODE_SCALAR;
+    private boolean m_field_oriented = true;
+    private boolean m_faris_mode = false;
+    private double m_speed_scalar = SwerveConstants.FARIS_SPEED_MODE_SCALAR;
 
-        private MedianFilter m_filter = null;
-        private Gyro m_gyro = null;
-        private SwerveModule[] m_swerve_modules = null;
-        private SwerveDriveKinematics m_swerve_drive_kinematics = null;
-        private SwerveDriveOdometry m_swerve_odometry = null;
+    private MedianFilter m_filter = null;
+    private Gyro m_gyro = null;
+    private SwerveModule[] m_swerve_modules = null;
+    private SwerveDriveKinematics m_swerve_drive_kinematics = null;
+    private SwerveDriveOdometry m_swerve_odometry = null;
 
     public SwerveDrive() {
         this.setName("SwerveDrive");
@@ -71,10 +71,10 @@ public class SwerveDrive extends SubsystemBase {
 
         // Configure AutoBuilder last
         AutoBuilder.configureHolonomic(
-            this::GetPose, // Robot pose supplier
-            this::ResetPose, // Method to reset odometry (will be called if your auto has a starting pose)
-            this::GetRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            this::DriveRobotRelative, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+            this::getPose, // Robot pose supplier
+            this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
+            this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            this::driveRobotRelative, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
             new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
                 new PIDConstants(SwerveConstants.DRIVE_KP, SwerveConstants.DRIVE_KI, SwerveConstants.DRIVE_KD), // Translation PID constants
                 new PIDConstants(SwerveConstants.STEER_KP, SwerveConstants.STEER_KI, SwerveConstants.STEER_KD), // Rotation PID constants
@@ -103,7 +103,7 @@ public class SwerveDrive extends SubsystemBase {
      * coded into FARIS_SPEED_MODE_SCALAR constexpr located in
      * SwerveConstants.h and should be a value between 0.1 and 1.0. 
      */
-    public void ToggleFarisMode() {
+    public void toggleFarisMode() {
         this.m_faris_mode = !this.m_faris_mode;
         if (this.m_faris_mode) {
             this.m_speed_scalar = Maths.clamp(SwerveConstants.FARIS_SPEED_MODE_SCALAR, 0.1, 1.0);
@@ -113,15 +113,15 @@ public class SwerveDrive extends SubsystemBase {
 
     }
 
-    public void Drive(Translation2d translation, double rotation) {
-        this.Drive(translation, rotation, true);
+    public void drive(Translation2d translation, double rotation) {
+        this.drive(translation, rotation, true);
     }
 
-    public void Drive(Translation2d translation, double rotation, boolean field_relative) {
-        this.Drive(translation, rotation, field_relative, false);
+    public void drive(Translation2d translation, double rotation, boolean field_relative) {
+        this.drive(translation, rotation, field_relative, false);
     }
 
-    public void Drive(Translation2d translation, double rotation, boolean field_relative, boolean is_open_loop) {
+    public void drive(Translation2d translation, double rotation, boolean field_relative, boolean is_open_loop) {
         this.m_field_oriented = field_relative;
 
         ChassisSpeeds speeds = null;
@@ -149,11 +149,11 @@ public class SwerveDrive extends SubsystemBase {
         }
     }
 
-    public void DriveRobotRelative(ChassisSpeeds speeds) {
-        this.DriveAuto(speeds);
+    public void driveRobotRelative(ChassisSpeeds speeds) {
+        this.driveAuto(speeds);
     }
 
-    public void DriveAuto(ChassisSpeeds speeds) {
+    public void driveAuto(ChassisSpeeds speeds) {
         //units::meters_per_second_t temp_vx{speeds.vx};
         //
         //speeds.vx = -speeds.vy;
@@ -175,13 +175,13 @@ public class SwerveDrive extends SubsystemBase {
      * both the drive and steering motor for all swerve
      * modules. 
      */
-    public void Stop() {
+    public void stop() {
         for (var sm : this.m_swerve_modules) sm.stop();
     }
 
 
-    public ChassisSpeeds GetRobotRelativeSpeeds() {
-        return this.m_swerve_drive_kinematics.toChassisSpeeds(this.GetModuleStates());
+    public ChassisSpeeds getRobotRelativeSpeeds() {
+        return this.m_swerve_drive_kinematics.toChassisSpeeds(this.getModuleStates());
     }
 
     /**
@@ -189,7 +189,7 @@ public class SwerveDrive extends SubsystemBase {
      * 
      * @return Pose2d Object that contains translational and rotational elements.
      */
-    public Pose2d GetPose() {
+    public Pose2d getPose() {
         return this.m_swerve_odometry.getPoseMeters();
     }
 
@@ -198,8 +198,8 @@ public class SwerveDrive extends SubsystemBase {
      * 
      * @return double Represent the pose's transitional x component.
      */    
-    public double GetPoseX() {
-        return this.GetPose().getX();
+    public double getPoseX() {
+        return this.getPose().getX();
     }
 
     /**
@@ -207,8 +207,8 @@ public class SwerveDrive extends SubsystemBase {
      * 
      * @return double Represent the pose's transitional y component.
      */    
-    public double GetPoseY() {
-        return this.GetPose().getY();
+    public double getPoseY() {
+        return this.getPose().getY();
     }
 
     /**
@@ -216,22 +216,22 @@ public class SwerveDrive extends SubsystemBase {
      * 
      * @return double Represent the pose's rotational component in degrees.
      */
-    public double GetPoseRotation() {
-        return this.GetPose().getRotation().getDegrees();
+    public double getPoseRotation() {
+        return this.getPose().getRotation().getDegrees();
     }
 
-    public void ResetPose(Pose2d pose) {
-        this.ResetOdometry(pose);
+    public void resetPose(Pose2d pose) {
+        this.resetOdometry(pose);
     }
 
     /**
      * Reset the odometer for all swerve modules.
      */
-    public void ResetOdometry(Pose2d pose) {
+    public void resetOdometry(Pose2d pose) {
         // this.m_swerve_odometry.resetPosition(frc::Rotation2d(units::degree_t(m_gyro->GetAngle())), GetModulePositions(), pose);
         this.m_swerve_odometry.resetPosition(
             Rotation2d.fromDegrees(this.m_gyro.getAngle()), 
-            this.GetModulePositions(), 
+            this.getModulePositions(), 
             pose);
     }
 
@@ -241,7 +241,7 @@ public class SwerveDrive extends SubsystemBase {
      * @return SwerveModuleState[4] Array of objects representing the speed
      *                              and angle of each swerve module.
      */
-    public SwerveModuleState[] GetModuleStates() {
+    public SwerveModuleState[] getModuleStates() {
         // var states = new SwerveModuleState[this.m_swerve_modules.length];
         // for (int i = 0; i < this.m_swerve_modules.length; i++) {
         //     states[i] = this.m_swerve_modules[i].getState();
@@ -263,7 +263,7 @@ public class SwerveDrive extends SubsystemBase {
      * @return SwerveModulePosition[4] Array of objects representing the distance
      *                                 traveled and the angle of each swerve module.
      */
-    public SwerveModulePosition[] GetModulePositions() {
+    public SwerveModulePosition[] getModulePositions() {
         // var positions = new SwerveModulePosition[this.m_swerve_modules.length];
         // for (int i = 0; i < this.m_swerve_modules.length; i++) {
         //     var module = this.m_swerve_modules[i];
@@ -292,7 +292,7 @@ public class SwerveDrive extends SubsystemBase {
      * @return SwerveModulePosition[4] Array of objects representing the inverted distance
      *                                 traveled and the angle of each swerve module.
      */
-    public SwerveModulePosition[] GetModulePositionsInverted() {
+    public SwerveModulePosition[] getModulePositionsInverted() {
         // var positions = new SwerveModulePosition[this.m_swerve_modules.length];
         // for (int i = 0; i < this.m_swerve_modules.length; i++) {
         //     var position = this.m_swerve_modules[i].getPosition();
@@ -315,7 +315,7 @@ public class SwerveDrive extends SubsystemBase {
      * 
      * @return Rotation2d A rotation in a 2D coordinate frame.
      */    
-    public Rotation2d GetYaw() {
+    public Rotation2d getYaw() {
         final double yawDegrees = Constants.INVERT_GYRO
             ? (360.0 - this.m_gyro.getYaw())
             : this.m_gyro.getYaw();
@@ -326,7 +326,7 @@ public class SwerveDrive extends SubsystemBase {
      * Sets the steers motor's rotor sensor to match the current
      * CANcoder value for each swerve module.
      */
-    public void ResetToAbsolute() {
+    public void resetToAbsolute() {
         for (var module : this.m_swerve_modules) module.resetToAbsolute();
     }
 
@@ -346,12 +346,12 @@ public class SwerveDrive extends SubsystemBase {
         //         new SwerveModulePosition( this.m_swerve_modules[3].getPosition().distanceMeters, this.m_swerve_modules[3].getCanCoder() )
         //     });
 
-        this.m_swerve_odometry.update(this.GetYaw().unaryMinus(), this.GetModulePositions());
+        this.m_swerve_odometry.update(this.getYaw().unaryMinus(), this.getModulePositions());
         
         SmartDashboard.putData(this); 
     }
 
-    public void PutTelemetry() {
+    public void putTelemetry() {
         SmartDashboard.putBoolean("Field Oriented", this.m_field_oriented);
         SmartDashboard.putBoolean("Faris Mode", this.m_faris_mode);
 
