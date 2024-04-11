@@ -23,38 +23,38 @@ public class SwerveModule {
     private static final double TWO_PI = 2 * Math.PI;
 
     // getRotations
-    private static double RadiansToRotations(final double radians) {
+    private static double radiansToRotations(final double radians) {
         return radians / TWO_PI;
     }
     
-    private static double DegreesToRotations(final double degrees) {
-        return RadiansToRotations(Math.toRadians(degrees)); 
+    private static double degreesToRotations(final double degrees) {
+        return radiansToRotations(Math.toRadians(degrees)); 
     }
     
     // fromRotations
-    private static double RotationsToRadians(final double rotations) {
+    private static double rotationsToRadians(final double rotations) {
         return rotations * TWO_PI; 
     }
 
-    public static double RPMToMechanism(final double rpm, final double gear_ratio) {
+    public static double rpmToMechanism(final double rpm, final double gear_ratio) {
         final double scalar = 2048.0 / 600.0;
         return (rpm * gear_ratio) * scalar; 
     }
 
-    public static double MechanismToRPM(final double velocity_counts, final double gear_ratio) {
+    public static double mechanismToRpm(final double velocity_counts, final double gear_ratio) {
         final double scalar = 600.0 / 2048.0;
-        double rpm = velocity_counts * scalar;        
+        final double rpm = velocity_counts * scalar;        
         return rpm / gear_ratio;
     }
 
-    public static double MechanismToMPS(final double velocity_counts, final double circumference, final double gear_ratio) {
-        final double rpm = MechanismToRPM(velocity_counts, gear_ratio);
+    public static double mechanismToMps(final double velocity_counts, final double circumference, final double gear_ratio) {
+        final double rpm = mechanismToRpm(velocity_counts, gear_ratio);
         return (rpm * circumference) / 60.0;
     }
 
-    public static double MPSToMechanism(final double velocity, final double circumference, final double gear_ratio) {
+    public static double mpsToMechanism(final double velocity, final double circumference, final double gear_ratio) {
         final double rpm = (velocity * 60.0) / circumference;
-        return RPMToMechanism(rpm, gear_ratio);
+        return rpmToMechanism(rpm, gear_ratio);
     }
 
     private String m_module_name;
@@ -137,17 +137,16 @@ public class SwerveModule {
         
         drive_configurator.apply(drive_config);
 
-        this.m_last_angle = this.GetState().angle;
+        this.m_last_angle = this.getState().angle;
 
-        this.ResetToAbsolute();        
-
+        this.resetToAbsolute();        
     }
 
-    public void SetDriveBrake() {
-        this.SetDriveBrake(true);
+    public void setDriveBrake() {
+        this.setDriveBrake(true);
     }
 
-    public void SetDriveBrake(boolean on) {
+    public void setDriveBrake(boolean on) {
         this.m_drive.setNeutralMode(on ? NeutralModeValue.Brake : NeutralModeValue.Coast); 
     }
 
@@ -156,7 +155,7 @@ public class SwerveModule {
      * and steering motor. Typically called by 
      * SwerveDrive::Stop().
      */
-    public void Stop() {
+    public void stop() {
         this.m_drive.set(0.0);
         this.m_steer.set(0.0);
     }
@@ -168,7 +167,7 @@ public class SwerveModule {
      * @param is_open_loop Determines if the drive motor is set directly or 
      *                     by velocity.
      */
-    public void SetDesiredState(SwerveModuleState desired_state, boolean is_open_loop) {
+    public void setDesiredState(SwerveModuleState desired_state, boolean is_open_loop) {
         // For steering, the swerve module should never have to change the angle of the wheel more than
         // 90 degrees to achieve the target angle.
         // Modify the desired_state's angle to be the shortest angle between the current and target angle.
@@ -176,8 +175,8 @@ public class SwerveModule {
         double rotations = this.m_steer.getPosition().getValueAsDouble();
         desired_state = SwerveModuleState.optimize(desired_state, Rotation2d.fromRotations(rotations));
 
-        this.SetAngle(desired_state);
-        this.SetSpeed(desired_state, is_open_loop);
+        this.setAngle(desired_state);
+        this.setSpeed(desired_state, is_open_loop);
     }
 
     /**
@@ -187,12 +186,12 @@ public class SwerveModule {
      * @param is_open_loop Determines if the drive motor is set directly or 
      *                     by velocity.
      */
-    public void SetSpeed(SwerveModuleState desired_state, boolean is_open_loop) {
+    public void setSpeed(SwerveModuleState desired_state, boolean is_open_loop) {
         if (is_open_loop) {
             double percent_output = desired_state.speedMetersPerSecond / SwerveConstants.DRIVE_MAX_SPEED;
             m_drive.set(percent_output);
         } else {
-            double velocity = MPSToMechanism(
+            double velocity = mpsToMechanism(
                     desired_state.speedMetersPerSecond,
                     SwerveConstants.DRIVE_WHEEL_CIRCUMFERENCE,
                     SwerveConstants.DRIVE_GEAR_RATIO);
@@ -213,7 +212,7 @@ public class SwerveModule {
      * 
      * @param desired_state The desired state of the module.
      */
-    public void SetAngle(SwerveModuleState desired_state) {
+    public void setAngle(SwerveModuleState desired_state) {
         //frc::Rotation2d angle = (fabs(desired_state.speed.value()) <= (DRIVE_MAX_SPEED * 0.005)) ? m_last_angle : desired_state.angle; 
 //        m_steer->SetControl(m_steer_position_voltage.WithPosition(units::angle::turn_t(RadiansToRotations(angle.Radians().value()))));
 //        m_last_angle = angle;
@@ -228,7 +227,7 @@ public class SwerveModule {
      * 
      * @param angle The desired state of the module.
      */
-    public void SetAngle(Rotation2d angle) {
+    public void setAngle(Rotation2d angle) {
         double rotations = angle.getRotations();
         PositionVoltage positionVoltage = this.m_steer_position_voltage.withPosition(rotations);
         this.m_steer.setControl(positionVoltage);
@@ -243,7 +242,7 @@ public class SwerveModule {
      * 
      * @return Rotation2d A rotation in a 2D coordinate frame.
      */
-    public Rotation2d GetAngle() {
+    public Rotation2d getAngle() {
         double rotations = this.m_steer.getPosition().getValueAsDouble();
         return Rotation2d.fromRotations(rotations);
     }
@@ -254,7 +253,7 @@ public class SwerveModule {
      * 
      * @return Rotation2d A rotation in a 2D coordinate frame.
      */
-    public Rotation2d GetAngleForOdometry() {
+    public Rotation2d getAngleForOdometry() {
         double rotations = this.m_steer.getPosition().getValueAsDouble() % 1.0;
         return Rotation2d.fromRotations(rotations);
     }
@@ -264,7 +263,7 @@ public class SwerveModule {
      * 
      * @return Rotation2d A rotation in a 2D coordinate frame.
      */
-    public Rotation2d GetCanCoder() {
+    public Rotation2d getCanCoder() {
         double rotations = this.m_cancoder.getAbsolutePosition().getValueAsDouble();
         return Rotation2d.fromRotations(rotations);
     }
@@ -273,7 +272,7 @@ public class SwerveModule {
      * Sets the steers motor's rotor sensor to match the current
      * CANcoder value. (Typically called by SwerveDrive::ResetToAbsolute())
      */
-    public void ResetToAbsolute() {
+    public void resetToAbsolute() {
         double position = this.m_cancoder.getAbsolutePosition().getValueAsDouble();
         this.m_steer.setPosition(-position);//RadiansToRotations(GetCanCoder().Radians().value())));
         //SetAngle(frc::Rotation2d(units::radian_t(0)));
@@ -285,12 +284,12 @@ public class SwerveModule {
      * @return SwerveModuleState Object representing the speed
      *         and angle of the swerve module.
      */
-    public SwerveModuleState GetState() {
-        double speedMetersPerSecond = MechanismToMPS(
+    public SwerveModuleState getState() {
+        double speedMetersPerSecond = mechanismToMps(
             this.m_drive.getPosition().getValueAsDouble(),
             SwerveConstants.DRIVE_WHEEL_CIRCUMFERENCE,
             SwerveConstants.DRIVE_GEAR_RATIO);
-        return  new SwerveModuleState(speedMetersPerSecond, this.GetAngle());
+        return  new SwerveModuleState(speedMetersPerSecond, this.getAngle());
     }
 
     /**
@@ -300,9 +299,9 @@ public class SwerveModule {
      *                              the drive module has traveled and
      *                              the angle of the swerve module.
      */
-    public SwerveModulePosition GetPosition() {
+    public SwerveModulePosition getPosition() {
         double distanceMeters = m_drive.getPosition().getValueAsDouble() * SwerveConstants.DRIVE_WHEEL_CIRCUMFERENCE;
-        return new SwerveModulePosition(distanceMeters, this.GetAngle());
+        return new SwerveModulePosition(distanceMeters, this.getAngle());
     }
 
     /**
@@ -310,7 +309,7 @@ public class SwerveModule {
      * telemetry to the SmartDashboard. This method is
      * called in SwerveDrive::PutTelemetry().
      */
-    public void PutTelemetry() {
+    public void putTelemetry() {
         SmartDashboard.putNumber(String.format("%s CC Pos", this.m_module_name), this.m_cancoder.getPosition().getValueAsDouble());
         SmartDashboard.putNumber(String.format("%s Pos", this.m_module_name), this.m_steer.getPosition().getValueAsDouble());
     }
