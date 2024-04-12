@@ -179,17 +179,17 @@ public class Robot extends TimedRobot {
           //Right is forward, left is back
         if (this.m_robotContainer.ctrl.getLeftTriggerAxis() > 0.2)
         {
-            bypass = false;
+            this.bypass = false;
             this.m_robotContainer.shooter.runShooterPercent(-(this.m_robotContainer.ctrl.getLeftTriggerAxis()));
         }
         else if (this.m_robotContainer.ctrl.getRightTriggerAxis() > 0.2)
         {
-            bypass = true;
+            this.bypass = true;
             this.m_robotContainer.shooter.runShooterPercent(this.m_robotContainer.ctrl.getRightTriggerAxis());
         }
         else
         {
-            bypass = false;
+            this.bypass = false;
             this.m_robotContainer.shooter.runShooterPercent(0.0);
         }
     
@@ -248,12 +248,12 @@ public class Robot extends TimedRobot {
         }
         else if (this.m_robotContainer.ctrl.getAButton())
         {
-            this.m_robotContainer.shooter.runIntakeMotorPercent(0.5, bypass);
+            this.m_robotContainer.shooter.runIntakeMotorPercent(0.5, this.bypass);
         }
         else
         {
-            if (!bypass)
-                this.m_robotContainer.shooter.runIntakeMotorPercent(0.0, bypass);
+            if (!this.bypass)
+                this.m_robotContainer.shooter.runIntakeMotorPercent(0.0, this.bypass);
         }
     
         //if (this.m_robotContainer.ctrl.getYButton()) // run swerve automatically using the limelight with the Y button
