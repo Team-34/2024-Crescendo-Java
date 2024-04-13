@@ -17,7 +17,6 @@ public class TrajMath {
 
     private static final double g = 9.80665; // gravity
 
-
     public TrajMath(
         final double note_max_velocity_mps,
         final double target_height_meters,
@@ -51,15 +50,14 @@ public class TrajMath {
     }
 
     public double getFiringAngleDeg() {
-        //                   ____________________
-        //          ⎛  v² - √ v⁴ - g(gx² + 2v²y)   ⎞
-        // θ = atan ⎜ ———————————————————————————— ⎟
-        //          ⎝               gx             ⎠
+        //           /        ________________________ \
+        //          |  v_2 - √ v_4 - g(gx_2 + 2*v_2*y)  |
+        // θ = atan | ————————————————————————————————— |
+        //           \              gx                 /
         //
         // Source:
         //   Solving Ballistic Trajectories <https://www.forrestthewoods.com/blog/solving_ballistic_trajectories/>
-        //   See section “Firing Angle to Hit Stationary Target.”
-
+        //   See section "Firing Angle to Hit Stationary Target.""
 
         final double v = this.m_note_max_velocity_mps * 0.7;
         final double v2 = v * v;
@@ -74,8 +72,8 @@ public class TrajMath {
 
         final double numerator = v2 - Math.sqrt(v4 - (g * (gx2 + (2*v2y))));
         final double denominator = gx;
-        final double θ = Math.atan(numerator / denominator);
-
+        final double theta = Math.atan(numerator / denominator);
+    
         SmartDashboard.putNumber("v", v);
         SmartDashboard.putNumber("v2", v2);
         SmartDashboard.putNumber("v4", v4);
@@ -88,22 +86,13 @@ public class TrajMath {
         SmartDashboard.putNumber("Numerator", numerator);
         SmartDashboard.putNumber("Denominator", denominator);
 
-        final double shooterFiringAngleDeg = Math.toDegrees(θ);
+        final double shooterFiringAngleDeg = Math.toDegrees(theta);
         final double armFiringAngleDeg = Constants.SHOOTER_OFFSET_ANGLE_DEG - shooterFiringAngleDeg;
         return armFiringAngleDeg;
     }
 
     public boolean isInRange() {
-        final double θ = Math.toRadians(this.m_shooter_angle_degrees);
-        final double v2 = this.m_note_max_velocity_mps * this.m_note_max_velocity_mps;
-        final double x = this.m_target_distance_meters;
-        final double cosθ = Math.cos(θ);
-        final double cos2θ = cosθ * cosθ;
-        final double tanθ = Math.tan(θ);
-
-        final double rate_of_rise = -(((2 * g) / (2 * v2 * cos2θ)) * x) + tanθ;
-    
-        return rate_of_rise > 0;     
+        return true;
     }
 
     public double getDistanceFromTarget() {
