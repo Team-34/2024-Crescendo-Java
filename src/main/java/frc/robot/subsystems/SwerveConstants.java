@@ -46,7 +46,7 @@ public class SwerveConstants {
     public static final int     DRIVE_CONTINUOUS_CURRENT_LIMIT = 35;
     public static final int     DRIVE_PEAK_CURRENT_LIMIT       = 60;
     public static final double  DRIVE_PEAK_CURRENT_DURATION    = 0.1;
-    public static final double  DRIVE_KP                       = 0.5; //0.5
+    public static final double  DRIVE_KP                       = 1.0; //0.5
     public static final double  DRIVE_KI                       = 0.0; //3.0
     public static final double  DRIVE_KD                       = 0.0; //0.0
     public static final double  DRIVE_KF                       = 0.0;

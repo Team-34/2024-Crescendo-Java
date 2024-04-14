@@ -70,7 +70,7 @@ public class RobotContainer {
         this.clock = Clock.systemUTC();
         this.swerve_drive = new SwerveDrive();
         this.ctrl = new T34XboxController(0);
-        this.shooter = new Shooter();
+        this.shooter = new Shooter(this.clock);
         // this.climber = new Climber();
         this.traj_math = new TrajMath(
             23.884,

@@ -1,5 +1,9 @@
 package frc.robot.subsystems;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
+
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.revrobotics.CANSparkMax;
@@ -19,17 +23,19 @@ public class Shooter {
     //double m_arm_angle_bottom{};
 
     private double m_max_speed_percent  = 1.0;
-    private double m_arm_angle_setpoint = 82.0;
+    private double m_arm_angle_setpoint = 90.0;
     private double m_tolerance          = 1.0;
     private double m_kp                 = 0.0;
 
     private boolean arm_using_pid = true;
 
-    private CANSparkMax m_firing_motor_left  = null;
-    private CANSparkMax m_firing_motor_right = null;
-    private CANSparkMax m_arm_motor_top      = null;
-    private CANSparkMax m_arm_motor_bottom   = null;
+    private CANSparkMax m_firing_motor_left    = null;
+    private CANSparkMax m_firing_motor_right   = null;
+    private RelativeEncoder m_firing_encoder_left = null;
+    private RelativeEncoder m_firing_encoder_right = null;
 
+    private CANSparkMax m_arm_motor_top          = null;
+    private CANSparkMax m_arm_motor_bottom       = null;
     private RelativeEncoder m_arm_encoder_top    = null;
     private RelativeEncoder m_arm_encoder_bottom = null;
 
@@ -43,14 +49,21 @@ public class Shooter {
     private DigitalInput m_note_sensor = null;
     private DigitalInput m_arm_sensor  = null;
 
-    public Shooter() {
-        this.m_firing_motor_left  = new CANSparkMax(14, MotorType.kBrushless);
-        this.m_firing_motor_right = new CANSparkMax(11, MotorType.kBrushless);
-        this.m_arm_motor_top      = new CANSparkMax(2, MotorType.kBrushless);
-        this.m_arm_motor_bottom   = new CANSparkMax(1, MotorType.kBrushless);
-        this.m_intake_motor       = new TalonSRX(12);
-        this.m_arm_encoder_top    = this.m_arm_motor_top.getEncoder(SparkRelativeEncoder.Type.kHallSensor, 42);
-        this.m_arm_encoder_bottom = this.m_arm_motor_bottom.getEncoder(SparkRelativeEncoder.Type.kHallSensor, 42);
+    private InstantSource clock = null;
+    private Instant m_current_time = null;
+    private Instant m_since_run_shooter = null;
+    private boolean m_reset_time = false;
+
+    public Shooter(final InstantSource clock) {
+        this.m_firing_motor_left    = new CANSparkMax(14, MotorType.kBrushless);
+        this.m_firing_motor_right   = new CANSparkMax(11, MotorType.kBrushless);
+        this.m_firing_encoder_left  = this.m_firing_motor_left.getEncoder(SparkRelativeEncoder.Type.kHallSensor, 42);
+        this.m_firing_encoder_right = this.m_firing_motor_right.getEncoder(SparkRelativeEncoder.Type.kHallSensor, 42);
+        this.m_arm_motor_top        = new CANSparkMax(2, MotorType.kBrushless);
+        this.m_arm_motor_bottom     = new CANSparkMax(1, MotorType.kBrushless);
+        this.m_intake_motor         = new TalonSRX(12);
+        this.m_arm_encoder_top      = this.m_arm_motor_top.getEncoder(SparkRelativeEncoder.Type.kHallSensor, 42);
+        this.m_arm_encoder_bottom   = this.m_arm_motor_bottom.getEncoder(SparkRelativeEncoder.Type.kHallSensor, 42);
         
         this.m_note_sensor = new DigitalInput(9);
         this.m_arm_sensor  = new DigitalInput(8);
@@ -64,13 +77,32 @@ public class Shooter {
         this.m_arm_pidctrl_bottom.setP(0.5);
         this.m_arm_pidctrl_bottom.setI(0.0);
         this.m_arm_pidctrl_bottom.setD(0.05);
+
+        this.clock = clock;
+        this.m_current_time = clock.instant();
+        this.m_since_run_shooter = clock.instant();
+        this.m_reset_time = false;
     }
 
     public void runShooterPercent(final double motor_output) {
-        m_firing_motor_left.set(Maths.clamp(motor_output, -this.m_max_speed_percent, this.m_max_speed_percent));
-        m_firing_motor_right.set(Maths.clamp(motor_output, -this.m_max_speed_percent, this.m_max_speed_percent));
+        double speed = Maths.clamp(motor_output, -this.m_max_speed_percent, this.m_max_speed_percent);
+
+        m_firing_motor_left.set(speed);
+        m_firing_motor_right.set(speed);
     
-        //runIntakeMotorPercent(motor_output, true);
+        // final boolean is_firing = speed > 0.5;
+        // if (is_firing)
+        // {
+        //     final double left_speed = m_firing_encoder_left.getVelocity();
+        //     final double right_speed = m_firing_encoder_right.getVelocity();
+        //     final double avg_speed = (left_speed + right_speed) / 2;
+        
+        //     if (avg_speed >= speed)
+        //     {
+        //         final boolean IGNORE_SENSOR = true;
+        //         this.runIntakeMotorPercent(speed, IGNORE_SENSOR);
+        //     } 
+        // }
     }
 
     public void runIntakeMotorPercent(final double motor_output) {
@@ -108,11 +140,11 @@ public class Shooter {
 
     public void configForAmp() {
         this.setSetpoint(87.18);
-        this.setMaxSpeedPercent(0.1);
+        this.setMaxSpeedPercent(0.11);
     }
 
     public void configForSpeaker(final double shooter_firing_angle) {
-        this.setSetpoint(67.5);
+        this.setSetpoint(shooter_firing_angle);
         this.setMaxSpeedPercent(1.0);    
     }
 
@@ -128,6 +160,7 @@ public class Shooter {
     
     public void periodic() {
         this.m_arm_angle_setpoint = Maths.clamp(this.m_arm_angle_setpoint, 12.0, 90.0);
+        this.m_current_time = clock.instant();
 
         //double motor_output = 
         //(fabs(m_kp * ( ( (m_arm_angle_setpoint / ARM_DEG_SCALAR) - GetTopArmEncoderVal()) / m_arm_angle_setpoint)) < m_tolerance) ? 
@@ -153,8 +186,8 @@ public class Shooter {
         this.m_arm_motor_top.setSmartCurrentLimit(20);
         this.m_arm_motor_bottom.setSmartCurrentLimit(20);
 
-        this.m_firing_motor_left.setSmartCurrentLimit(20);
-        this.m_firing_motor_right.setSmartCurrentLimit(20);    
+        this.m_firing_motor_left.setSmartCurrentLimit(30);
+        this.m_firing_motor_right.setSmartCurrentLimit(30);    
     }
 
     public void putTelemetry() {
@@ -166,7 +199,24 @@ public class Shooter {
     
         //SmartDashboard.putBoolean("IsIntakeMovingBackwards: ", IsIntakeMovingBackward(m_intake_motor.GetMotorOutputPercent()));
         SmartDashboard.putBoolean("UsingPIDArmMovement: ", this.usingPIDArmMovement());
-    
+
+        SmartDashboard.putNumber("Time delta (seconds)", Duration.between(m_current_time, m_since_run_shooter).getSeconds());
+    }
+
+    public void shoot(double motorOutput) {
+        final var delta = Duration.between(this.m_current_time, this.m_since_run_shooter).getSeconds();
+
+        this.runShooterPercent(motorOutput);
+
+        if (delta > 1 && delta < 2)
+        {
+            final boolean IGNORE_SENSOR = true;
+            this.runIntakeMotorPercent(0.7, IGNORE_SENSOR);
+        }
+        else if (delta > 2)
+        {
+            this.m_since_run_shooter = clock.instant();
+        }
     }
 
     public void setZero() {
@@ -179,10 +229,14 @@ public class Shooter {
     }
 
     public void moveUp() { 
-        this.m_arm_angle_setpoint += 0.5; 
+        this.m_arm_angle_setpoint += 1.0; 
     }
     public void moveDown() { 
-        this.m_arm_angle_setpoint -= 0.5; 
+        this.m_arm_angle_setpoint -= 1.0; 
+    }
+
+    public void ToggleResetTime() {
+        this.m_reset_time = !this.m_reset_time;
     }
 
     public double getTopArmEncoderVal() {

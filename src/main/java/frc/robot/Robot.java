@@ -186,6 +186,7 @@ public class Robot extends TimedRobot {
         {
             this.bypass = true;
             this.m_robotContainer.shooter.runShooterPercent(this.m_robotContainer.ctrl.getRightTriggerAxis());
+            //this.m_robotContainer.shooter.shoot(this.m_robotContainer.ctrl.getRightTriggerAxis());
         }
         else
         {
@@ -210,7 +211,7 @@ public class Robot extends TimedRobot {
                 break;
             case (Constants.POV_LEFT): // max speed
                 this.m_robotContainer.limelight_util.targetSpeaker();
-                this.m_robotContainer.shooter.configForSpeaker(this.m_robotContainer.traj_math.getFiringAngleDeg());
+                this.m_robotContainer.shooter.configForSpeaker(this.m_robotContainer.traj_math.getArmFiringAngleDeg());
                 break;
         }
     
@@ -244,11 +245,11 @@ public class Robot extends TimedRobot {
         //Run intake backward with the X button, forward with A button
         if (this.m_robotContainer.ctrl.getXButton())
         {
-            this.m_robotContainer.shooter.runIntakeMotorPercent(-0.5);
+            this.m_robotContainer.shooter.runIntakeMotorPercent(-0.7);
         }
         else if (this.m_robotContainer.ctrl.getAButton())
         {
-            this.m_robotContainer.shooter.runIntakeMotorPercent(0.5, this.bypass);
+            this.m_robotContainer.shooter.runIntakeMotorPercent(0.7, this.bypass);
         }
         else
         {

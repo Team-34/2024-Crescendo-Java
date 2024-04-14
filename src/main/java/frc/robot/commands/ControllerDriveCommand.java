@@ -16,32 +16,32 @@ public class ControllerDriveCommand extends Command {
     private T34XboxController m_controller = null;
     private double m_driving_speed = 0.0;
 
-    private InstantSource clock = null;
-    private Instant m_last_zero;
+    SlewRateLimiter m_x_limiter = null;
+    SlewRateLimiter m_y_limiter = null;
+    SlewRateLimiter m_r_limiter = null;
 
-    private SlewRateLimiter m_x_speed_limiter   = null;
-    private SlewRateLimiter m_y_speed_limiter   = null;
-    private SlewRateLimiter m_rot_speed_limiter = null;
+    private InstantSource clock = null;
+    private Instant m_last_zero = null;
 
     public ControllerDriveCommand(SwerveDrive drive, T34XboxController controller, InstantSource clock) {
         this.m_swerve_drive = drive;
         this.m_controller = controller;
 
-        this.addRequirements(drive);
-
-        this.m_x_speed_limiter = new SlewRateLimiter(0.2);
-        this.m_y_speed_limiter = new SlewRateLimiter(0.2);
-        this.m_rot_speed_limiter = new SlewRateLimiter(0.2);
+        this.m_x_limiter = new SlewRateLimiter(1.1);
+        this.m_y_limiter = new SlewRateLimiter(1.1);
+        this.m_r_limiter = new SlewRateLimiter(2.0);
         
         this.clock = clock;
         this.m_last_zero = clock.instant();
+
+        this.addRequirements(drive);
     }
 
     @Override
-    public void initialize() {
-        final double x    = this.m_controller.getLeftStickXDB();
-        final double y    = this.m_controller.getLeftStickYDB();
-        final double rot  = this.m_controller.getRightStickXDB();
+    public void execute() {
+        final double x   = this.m_controller.getLeftStickXDB();
+        final double y   = this.m_controller.getLeftStickYDB();
+        final double rot = this.m_controller.getRightStickXDB();
 
         if (isInputZero(x, y, rot)) {
             this.m_swerve_drive.stop();
@@ -59,27 +59,11 @@ public class ControllerDriveCommand extends Command {
             return;
         }
         
-        // Get the x speed. We are inverting this because Xbox controllers return
-        // negative values when we push forward.
-        final double x_speed = -m_x_speed_limiter.calculate(x);
+        double x_speed = Math.copySign(ScaleToRange(-(x * x), 0.0, 1.0, 0.0, SwerveConstants.DRIVE_MAX_SPEED), x);
+        double y_speed = Math.copySign(ScaleToRange(-(y * y), 0.0, 1.0, 0.0, SwerveConstants.DRIVE_MAX_SPEED), y);
+        double r_speed = Math.copySign(ScaleToRange(-(rot * rot), 0.0, 1.0, 0.0, SwerveConstants.STEER_MAX_SPEED), rot);
 
-        // Get the y speed or sideways/strafe speed. We are inverting this because
-        // we want a positive value when we pull to the left. Xbox controllers
-        // return positive values when you pull to the right by default.
-        final double y_speed = -m_y_speed_limiter.calculate(y);
-
-        // Get the rate of angular rotation. We are inverting this because we want a
-        // positive value when we pull to the left (remember, CCW is positive in
-        // mathematics). Xbox controllers return positive values when you pull to
-        // the right by default.
-        final double rot_speed = -m_rot_speed_limiter.calculate(rot);
-
-        // double x_speed = std::copysign(ScaleToRange(-(x * x), 0.0, 1.0, 0.0, DRIVE_MAX_SPEED), x);
-        // double y_speed = std::copysign(ScaleToRange(-(y * y), 0.0, 1.0, 0.0, DRIVE_MAX_SPEED), y);
-        // double r_speed = std::copysign(ScaleToRange(-(rot * rot), 0.0, 1.0, 0.0, STEER_MAX_SPEED), rot);
-
-        this.m_swerve_drive.drive(new Translation2d(x_speed, y_speed), rot_speed);
-
+        this.m_swerve_drive.drive(new Translation2d(x_speed, y_speed), r_speed);
     }
 
     @Override
@@ -97,8 +81,8 @@ public class ControllerDriveCommand extends Command {
         final double in_min, 
         final double in_max, 
         final double out_min, 
-        final double out_max
-    ) {
+        final double out_max)
+    {
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
