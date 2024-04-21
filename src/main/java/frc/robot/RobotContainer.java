@@ -4,19 +4,12 @@
 
 package frc.robot;
 
-import frc.robot.Constants.OperatorConstants;
-import frc.robot.commands.Autos;
 import frc.robot.commands.ControllerDriveCommand;
-import frc.robot.commands.ExampleCommand;
-import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.LimelightUtil;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.SwerveDrive;
 
 import java.time.Clock;
-
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.PathPlannerPath;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -73,7 +66,7 @@ public class RobotContainer {
         this.shooter = new Shooter(this.clock);
         // this.climber = new Climber();
         this.traj_math = new TrajMath(
-            23.884,
+            11.884 * 2, //14.062,
             1.9815,
             1.435,
             0.2688,

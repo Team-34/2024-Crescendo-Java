@@ -22,10 +22,8 @@ public class Shooter {
     //double m_arm_angle_top{};
     //double m_arm_angle_bottom{};
 
-    private double m_max_speed_percent  = 1.0;
+    private double m_max_speed_percent  = 0.8;
     private double m_arm_angle_setpoint = 90.0;
-    private double m_tolerance          = 1.0;
-    private double m_kp                 = 0.0;
 
     private boolean arm_using_pid = true;
 
@@ -52,6 +50,7 @@ public class Shooter {
     private InstantSource clock = null;
     private Instant m_current_time = null;
     private Instant m_since_run_shooter = null;
+    private Duration m_time_delta = null;
     private boolean m_reset_time = false;
 
     public Shooter(final InstantSource clock) {
@@ -81,6 +80,7 @@ public class Shooter {
         this.clock = clock;
         this.m_current_time = clock.instant();
         this.m_since_run_shooter = clock.instant();
+        this.m_time_delta = Duration.ZERO;
         this.m_reset_time = false;
     }
 
@@ -145,17 +145,17 @@ public class Shooter {
 
     public void configForSpeaker(final double shooter_firing_angle) {
         this.setSetpoint(shooter_firing_angle);
-        this.setMaxSpeedPercent(1.0);    
+        this.setMaxSpeedPercent(0.8);
     }
 
     public void configForRest() {
         this.setSetpoint(90.0);
-        this.setMaxSpeedPercent(1.0);    
+        this.setMaxSpeedPercent(0.8);    
     }
 
     public void configForNoteCollection() {
         this.setSetpoint(23.0);
-        this.setMaxSpeedPercent(1.0);    
+        this.setMaxSpeedPercent(0.8);    
     }
     
     public void periodic() {
@@ -200,23 +200,7 @@ public class Shooter {
         //SmartDashboard.putBoolean("IsIntakeMovingBackwards: ", IsIntakeMovingBackward(m_intake_motor.GetMotorOutputPercent()));
         SmartDashboard.putBoolean("UsingPIDArmMovement: ", this.usingPIDArmMovement());
 
-        SmartDashboard.putNumber("Time delta (seconds)", Duration.between(m_current_time, m_since_run_shooter).getSeconds());
-    }
-
-    public void shoot(double motorOutput) {
-        final var delta = Duration.between(this.m_current_time, this.m_since_run_shooter).getSeconds();
-
-        this.runShooterPercent(motorOutput);
-
-        if (delta > 1 && delta < 2)
-        {
-            final boolean IGNORE_SENSOR = true;
-            this.runIntakeMotorPercent(0.7, IGNORE_SENSOR);
-        }
-        else if (delta > 2)
-        {
-            this.m_since_run_shooter = clock.instant();
-        }
+        SmartDashboard.putNumber("Time delta (seconds)", this.m_time_delta.getSeconds());
     }
 
     public void setZero() {
@@ -228,15 +212,38 @@ public class Shooter {
         this.m_arm_angle_setpoint = setpoint;
     }
 
+    private static Duration SHOOTER_SPINUP_TIME = Duration.ofSeconds(1);
+    public void shoot(double motorOutput) {
+        final boolean IGNORE_SENSOR = true;
+
+        this.runShooterPercent(motorOutput);
+
+        this.m_time_delta = Duration.between(this.m_current_time, this.m_since_run_shooter);
+
+        final boolean isShooterSpunUp = this.m_time_delta.compareTo(SHOOTER_SPINUP_TIME) > 1;
+        if (isShooterSpunUp)
+        {
+            this.runIntakeMotorPercent(0.7, IGNORE_SENSOR);
+        }
+        else
+        {
+            this.runIntakeMotorPercent(0.0, IGNORE_SENSOR);
+        }
+
+        this.updateShooterClock();
+    }
+
+    private final static Duration MAX_TIME_DELTA = Duration.ofSeconds(2);
+    public void updateShooterClock() {
+        final boolean shouldUpdateShooterClock = this.m_time_delta.compareTo(MAX_TIME_DELTA) > 0;
+        if (shouldUpdateShooterClock) this.m_since_run_shooter = this.clock.instant();
+    }
+
     public void moveUp() { 
         this.m_arm_angle_setpoint += 1.0; 
     }
     public void moveDown() { 
         this.m_arm_angle_setpoint -= 1.0; 
-    }
-
-    public void ToggleResetTime() {
-        this.m_reset_time = !this.m_reset_time;
     }
 
     public double getTopArmEncoderVal() {
@@ -273,14 +280,6 @@ public class Shooter {
 
     public boolean isArmAtZero() { 
         return m_arm_sensor.get(); 
-    }
-
-    public void setTolerance(final double t) {
-        this.m_tolerance = t; 
-    }
-
-    public void setkP(final double kP) {
-        this.m_kp = kP; 
     }
 
     private boolean isIntakeMovingBackward(final double motor_output) {

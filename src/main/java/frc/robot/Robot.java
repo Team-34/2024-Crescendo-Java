@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import java.util.Optional;
+
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -16,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * project.
  */
 public class Robot extends TimedRobot {
-    private Command m_autonomousCommand;
+    private Optional<Command> m_autonomousCommand = Optional.empty();
 
     private RobotContainer m_robotContainer;
 
@@ -34,7 +36,6 @@ public class Robot extends TimedRobot {
       this.m_robotContainer = new RobotContainer();
 
       this.m_robotContainer.shooter.init();
-      // this.m_robotContainer.climber.init();
     }
 
     /**
@@ -107,12 +108,13 @@ public class Robot extends TimedRobot {
     public void autonomousInit() {
         Gyro.get().zeroYaw();
 
-        m_autonomousCommand = this.m_robotContainer.getAutonomousCommand();
+        m_autonomousCommand = Optional.ofNullable(this.m_robotContainer.getAutonomousCommand());
 
         // schedule the autonomous command (example)
-        if (m_autonomousCommand != null) {
-            m_autonomousCommand.schedule();
-        }
+        // if (m_autonomousCommand != null) {
+        //     m_autonomousCommand.schedule();
+        // }
+        m_autonomousCommand.ifPresent(cmd -> cmd.schedule());
     }
 
     /** This function is called periodically during autonomous. */
@@ -125,12 +127,10 @@ public class Robot extends TimedRobot {
         // teleop starts running. If you want the autonomous to
         // continue until interrupted by another command, remove
         // this line or comment it out.
-        if (m_autonomousCommand != null) {
-            m_autonomousCommand.cancel();
-        }
-
-        this.m_robotContainer.shooter.setTolerance(0.03);
-        this.m_robotContainer.shooter.setkP(0.5);
+        // if (m_autonomousCommand != null) {
+        //     m_autonomousCommand.cancel();
+        // }
+        m_autonomousCommand.ifPresent(cmd -> cmd.cancel());
 
         CommandScheduler.getInstance().setDefaultCommand(
             this.m_robotContainer.swerve_drive,
@@ -185,13 +185,13 @@ public class Robot extends TimedRobot {
         else if (this.m_robotContainer.ctrl.getRightTriggerAxis() > 0.2)
         {
             this.bypass = true;
-            this.m_robotContainer.shooter.runShooterPercent(this.m_robotContainer.ctrl.getRightTriggerAxis());
-            //this.m_robotContainer.shooter.shoot(this.m_robotContainer.ctrl.getRightTriggerAxis());
+            this.m_robotContainer.shooter.shoot(this.m_robotContainer.ctrl.getRightTriggerAxis());
         }
         else
         {
             this.bypass = false;
             this.m_robotContainer.shooter.runShooterPercent(0.0);
+            this.m_robotContainer.shooter.updateShooterClock();
         }
     
         //Set the robot's target mode with the D-Pad
@@ -218,11 +218,11 @@ public class Robot extends TimedRobot {
         //Move the arm with the bumpers
           //Right bumper increases angle, left bumper decreases angle
     
-        if (this.m_robotContainer.ctrl.getLeftBumper() && this.m_robotContainer.shooter.usingPIDArmMovement() && this.m_robotContainer.shooter.isArmAtZero() == false)
+        if (this.m_robotContainer.ctrl.getLeftBumper() && this.m_robotContainer.shooter.usingPIDArmMovement() && !this.m_robotContainer.shooter.isArmAtZero())
         {
             this.m_robotContainer.shooter.moveDown();
         }
-        else if (this.m_robotContainer.ctrl.getRightBumper() && this.m_robotContainer.shooter.usingPIDArmMovement() == false)
+        else if (this.m_robotContainer.ctrl.getRightBumper() && !this.m_robotContainer.shooter.usingPIDArmMovement())
         {
             this.m_robotContainer.shooter.runTopArmMotorPercent(0.25);
             this.m_robotContainer.shooter.runBottomArmMotorPercent(0.25);
@@ -231,12 +231,12 @@ public class Robot extends TimedRobot {
         {
             this.m_robotContainer.shooter.moveUp();
         }
-        else if (this.m_robotContainer.ctrl.getLeftBumper() && this.m_robotContainer.shooter.usingPIDArmMovement() == false && this.m_robotContainer.shooter.isArmAtZero() == false)
+        else if (this.m_robotContainer.ctrl.getLeftBumper() && !this.m_robotContainer.shooter.usingPIDArmMovement() && !this.m_robotContainer.shooter.isArmAtZero())
         {
             this.m_robotContainer.shooter.runTopArmMotorPercent(-0.3);
             this.m_robotContainer.shooter.runBottomArmMotorPercent(-0.3);
         }
-        else if (this.m_robotContainer.shooter.usingPIDArmMovement() == false)
+        else if (!this.m_robotContainer.shooter.usingPIDArmMovement())
         {
             this.m_robotContainer.shooter.runTopArmMotorPercent(0.0);
             this.m_robotContainer.shooter.runBottomArmMotorPercent(0.0);

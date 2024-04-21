@@ -53,51 +53,17 @@ public class TrajMath {
     }
 
     public double getArmFiringAngleDeg() {
-        //           /        ________________________ \
-        //          |  v_2 - √ v_4 - g(gx_2 + 2*v_2*y)  |
-        // θ = atan | ————————————————————————————————— |
-        //           \              gx                 /
-        //
-        // Source:
-        //   Solving Ballistic Trajectories <https://www.forrestthewoods.com/blog/solving_ballistic_trajectories/>
-        //   See section "Firing Angle to Hit Stationary Target.""
-
-        final double v = this.m_note_max_velocity_mps * 1.0;
-        final double v2 = v * v;
-        final double v4 = v2 * v2;
         final double x = this.getDistanceFromTarget();
         final double x2 = x * x;
-        final double y  = this.m_target_height_meters;
+        double firingAngleDeg = (-1.9171 * x2) + (17.186 * x) + (3.5412);
 
-        final double gx  = g * x;
-        final double gx2 = g * x2;
-        final double v2y = v2 * y;
-
-        final double numerator = v2 - Math.sqrt(v4 - (g * (gx2 + (2*v2y))));
-        final double denominator = gx;
-        final double theta = Math.atan(numerator / denominator);
-    
-        SmartDashboard.putNumber("v", v);
-        SmartDashboard.putNumber("v2", v2);
-        SmartDashboard.putNumber("v4", v4);
-        SmartDashboard.putNumber("x", x);
-        SmartDashboard.putNumber("x2", x2);
-        SmartDashboard.putNumber("y", y);
-        SmartDashboard.putNumber("gx", gx);
-        SmartDashboard.putNumber("gx2", gx2);
-        SmartDashboard.putNumber("v2y", v2y);
-        SmartDashboard.putNumber("Numerator", numerator);
-        SmartDashboard.putNumber("Denominator", denominator);
-
-        if (Double.isNaN(theta)) {
+        if (Double.isNaN(firingAngleDeg)) {
             return this.m_previous_firing_angle;
         }
 
-        this.m_previous_firing_angle = theta;
+        this.m_previous_firing_angle = firingAngleDeg;
 
-        final double shooterFiringAngleDeg = Math.toDegrees(theta);
-        final double armFiringAngleDeg = Constants.SHOOTER_OFFSET_ANGLE_DEG - shooterFiringAngleDeg;
-        return armFiringAngleDeg;
+        return firingAngleDeg;
     }
 
     public boolean isInRange() {
